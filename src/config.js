@@ -1,9 +1,8 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME ||'token-access'
+const CONTRACT_NAME = process.env.CONTRACT_NAME || 'token-access.shiminshen.testnet'
 
 function getConfig(env) {
   switch (env) {
 
-  case 'production':
   case 'mainnet':
     return {
       networkId: 'mainnet',
@@ -13,6 +12,7 @@ function getConfig(env) {
       helperUrl: 'https://helper.mainnet.near.org',
       explorerUrl: 'https://explorer.mainnet.near.org',
     }
+  case 'production':
   case 'development':
   case 'testnet':
     return {
