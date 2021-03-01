@@ -1,4 +1,4 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME || 'token-access.shiminshen.testnet'
+const CONTRACT_NAME = process.env.CONTRACT_NAME ||'token-access.llawliet.testnet'
 
 function getConfig(env) {
   switch (env) {

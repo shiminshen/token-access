@@ -1,197 +1,333 @@
 import 'regenerator-runtime/runtime'
-import React from 'react'
-import { login, logout } from './utils'
+import 'fontsource-roboto';
+import React, { useState, useEffect } from 'react'
+
+// Material UI imports
+import LinearProgress from '@material-ui/core/LinearProgress'
+
+// DApp component imports
+import SignIn from './components/common/SignIn/signIn'
+import Initialize from './components/Initialize/initialize'
+import TokenData from './components/TokenData/tokenData'
+
+// import stylesheets
 import './global.css'
 
-import getConfig from './config'
-const { networkId } = getConfig(process.env.NODE_ENV || 'development')
-
 export default function App() {
-  // use React Hooks to store greeting in component state
-  const [greeting, setGreeting] = React.useState()
 
-  // when the user has not yet interacted with the form, disable the button
-  const [buttonDisabled, setButtonDisabled] = React.useState(true)
+  // state setup
+  const [loggedIn, setLoginState] = useState(false)
+  const [initialized, setInit] = useState(false)
+  const [done, setDone] = useState(false)
+  const [accountId, setAccountId] = useState()
+  const [tokenOwner, setTokenOwner] = useState()
+  const [initialSupply, setInitialSupply] = useState()
+  const [totalSupply, setTotalSupply] = useState()
+  const [tokenName, setTokenName] = useState()
+  const [tokenSymbol, setTokenSymbol] = useState()
+  const [accountBalance, setAccountBalance] = useState()
+  const [precision, setPrecision] = useState()
+  const [transferEvents, setTransferEvents] = useState([])
+  const [mintEvents, setMintEvents] = useState([])
+  const [burnEvents, setBurnEvents] = useState([])
+  const [ownerTransferEvents, setOwnerTransferEvents] = useState([])
+  const [tabValue, setTabValue] = useState('1')
 
-  // after submitting the form, we want to show Notification
-  const [showNotification, setShowNotification] = React.useState(false)
+  function handleInitChange(newState) {
+    setInit(newState)
+  }
+
+  function handleOwnerChange(newOwner) {
+    setTokenOwner(newOwner)
+  }
+
+  async function handleSupplyChange() {
+    try {
+    let currentSupply = await window.contract.get_total_supply()
+    setTotalSupply(currentSupply)
+    return true
+    } catch (err) {
+    return false
+    }
+  }
+
+  async function handleTransferEventChange() {
+    try {
+      let currentTransferEvents = await window.contract.getAllTransferEvents()
+      if(currentTransferEvents){
+        setTransferEvents(currentTransferEvents)
+      }
+      return true
+    } catch (err) {
+      return false
+    }
+  }
+
+  async function handleMintEventChange() {
+    try {
+      let currentMintEvents = await window.contract.getAllMintEvents()
+      if(currentMintEvents){
+        setMintEvents(currentMintEvents)
+      }
+      return true
+    } catch (err) {
+      return false
+    }
+  }
+
+  function handleTabValueState(value) {
+    setTabValue(value)
+  }
 
   // The useEffect hook can be used to fire side-effects during render
   // Learn more: https://reactjs.org/docs/hooks-intro.html
-  React.useEffect(
-    () => {
+  useEffect(
+      () => {
       // in this case, we only care to query the contract when signed in
       if (window.walletConnection.isSignedIn()) {
+        setLoginState(true)
+        setAccountId(window.accountId)
+        
+        async function fetchData() {
+          try {
+          // retrieve Token Name and set state
+          try {
+            // window.contract is set in utils.js after being called by initContract in index.js
+            let name = await window.contract.getTokenName()
+            setTokenName(name)
+          } catch (err) {
+            console.log('token name not set yet')
+            return false
+          }
+          try {
+            // window.contract is set in utils.js after being called by initContract in index.js
+            let balance = await window.contract.get_balance({owner_id: window.accountId})
+            setAccountBalance(balance)
+          } catch (err) {
+            console.log('no balance')
+            setAccountBalance(0)
+          }
+          // retrieve Token Symbol and set state
+          try {
+            let symbol = await window.contract.getTokenSymbol()
+            setTokenSymbol(symbol)
+          } catch (err) {
+            console.log('token symbol not set yet')
+            return false
+          }
 
-        // window.contract is set by initContract in index.js
-        window.contract.getGreeting({ accountId: window.accountId })
-          .then(greetingFromContract => {
-            setGreeting(greetingFromContract)
+          // retrieve Token Precision and set state
+          try {
+            let decimals = await window.contract.getPrecision()
+            setPrecision(decimals)
+          } catch (err) {
+            console.log('precision not set yet')
+            return false
+          }
+
+          // retrieve Initial Supply and set state
+          try {
+            let startSupply = await window.contract.getInitialSupply()
+            setInitialSupply(startSupply)
+          } catch (err) {
+            console.log('initial supply not set yet')
+            return false
+          }
+
+          // retrieve current Total Supply and set state
+          try {
+            let currentSupply = await window.contract.get_total_supply()
+            setTotalSupply(currentSupply)
+          } catch (err) {
+            console.log('total supply not set yet')
+            return false
+          }
+
+           // retrieve current token owner and set state
+           try {
+            let owner = await window.contract.getOwner()
+            setTokenOwner(owner)
+          } catch (err) {
+            console.log('no owner yet')
+            return false
+          }
+        
+          } catch (err) {
+            setDone(false)
+            return false
+          }
+          return true
+        }
+        fetchData()
+          .then((res) => {
+            res ? setInit(true) : setInit(false)
+            setDone(true)
+          })
+
+        async function fetchTransferData() {
+          try {
+            let transfers = await window.contract.getAllTransferEvents()
+            console.log('transfers', transfers)
+            if(transfers.length != 0) {
+              setTransferEvents(transfers)
+            }
+          } catch (err) {
+            console.log('error retrieving transfers')
+            return false
+          }
+        }
+        
+        fetchTransferData()
+          .then((res) => {
+            console.log('transfer records exist', res)
+          })
+
+        async function fetchMintData() {
+          try {
+            let mints = await window.contract.getAllMintEvents()
+            console.log('mints', mints)
+            if(mints.length != 0) {
+              setMintEvents(mints)
+            }
+          } catch (err) {
+            console.log('error retrieving mint events')
+            return false
+          }
+        }
+        
+        fetchMintData()
+          .then((res) => {
+            console.log('minting records exist', res)
+          })
+
+        async function fetchBurnData() {
+          try {
+            let burns = await window.contract.getAllBurnEvents()
+            console.log('burns', burns)
+            if(burns.length != 0) {
+              setBurnEvents(burns)
+            }
+          } catch (err) {
+            console.log('error retrieving burn events')
+            return false
+          }
+        }
+        
+        fetchBurnData()
+          .then((res) => {
+            console.log('burn records exist', res)
+          })
+
+        async function fetchOwnerTransferData() {
+          try {
+            let ots = await window.contract.getAllOwnerTransferEvents()
+            console.log('ownership transfers', ots)
+            if(ots.length != 0) {
+              setOwnerTransferEvents(ots)
+            }
+          } catch (err) {
+            console.log('error retrieving ownership transfer events')
+            return false
+          }
+        }
+        
+        fetchOwnerTransferData()
+          .then((res) => {
+            console.log('owner transfer records exist', res)
           })
       }
     },
 
     // The second argument to useEffect tells React when to re-run the effect
-    // Use an empty array to specify "only run on first render"
-    // This works because signing into NEAR Wallet reloads the page
-    []
+    // it compares current value and if different - re-renders
+    [initialized, tokenOwner]
   )
 
-  // if not signed in, return early with sign-in prompt
+  // if not signed in, return early with sign-in component
   if (!window.walletConnection.isSignedIn()) {
-    return (
-      <main>
-        <h1>Welcome to NEAR!</h1>
-        <p>
-          To make use of the NEAR blockchain, you need to sign in. The button
-          below will sign you in using NEAR Wallet.
-        </p>
-        <p>
-          By default, when your app runs in "development" mode, it connects
-          to a test network ("testnet") wallet. This works just like the main
-          network ("mainnet") wallet, but the NEAR Tokens on testnet aren't
-          convertible to other currencies – they're just for testing!
-        </p>
-        <p>
-          Go ahead and click the button below to try it out:
-        </p>
-        <p style={{ textAlign: 'center', marginTop: '2.5em' }}>
-          <button onClick={login}>Sign in</button>
-        </p>
-      </main>
-    )
+    return (<SignIn />)
   }
 
-  return (
-    // use React Fragment, <>, to avoid wrapping elements in unnecessary divs
-    <>
-      <button className="link" style={{ float: 'right' }} onClick={logout}>
-        Sign out
-      </button>
-      <main>
-        <h1>
-          <label
-            htmlFor="greeting"
-            style={{
-              color: 'var(--secondary)',
-              borderBottom: '2px solid var(--secondary)'
-            }}
-          >
-            {greeting}
-          </label>
-          {' '/* React trims whitespace around tags; insert literal space character when needed */}
-          {window.accountId}!
-        </h1>
-        <form onSubmit={async event => {
-          event.preventDefault()
+  async function poll() {
+    const latestHash = (await window.near.connection.provider.status()).sync_info.latest_block_hash;
+      console.log('latest Hash', latestHash)
+    const latestBlock = await near.connection.provider.block(latestHash);
+    console.log('latestBlock', latestBlock)
 
-          // get elements from the form using their id attribute
-          const { fieldset, greeting } = event.target.elements
+    let startBlockId = await latestBlock.header.hash
+    console.log('start block Id', startBlockId)
+    let stopBlockId = 1
+    let i = 0
+    let currentBlockId = startBlockId
+    let currentBlock = latestBlock
+    while(currentBlockId != stopBlockId) {
+      currentBlock = await near.connection.provider.block(currentBlockId)
+      console.log('current block id', currentBlockId)
+      const changes = await fetch('https://rpc.testnet.near.org', {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "icare",
+          method: "EXPERIMENTAL_changes",
+          params: {
+            "block_id": currentBlockId,
+            "changes_type": "data_changes",
+            "account_ids": ["vpc.vitalpointai.testnet"],
+            "key_prefix_base64": "U1RBVEU="
+          },
+        })
+      })
+      const jsonChanges = await changes.json()
+      console.log('aloha jsonChanges', jsonChanges)
+      const onlyChanges = jsonChanges.result.changes.map(c => c.change.value_base64)
+      console.log('onlyChanges', onlyChanges)
+      currentBlockId = await currentBlock.header.prev_hash
+    }
+  }
 
-          // hold onto new user-entered value from React's SynthenticEvent for use after `await` call
-          const newGreeting = greeting.value
+  //window.setInterval(poll, 2000)
 
-          // disable the form while the value gets updated on-chain
-          fieldset.disabled = true
-
-          try {
-            // make an update call to the smart contract
-            await window.contract.setGreeting({
-              // pass the value that the user entered in the greeting field
-              message: newGreeting
-            })
-          } catch (e) {
-            alert(
-              'Something went wrong! ' +
-              'Maybe you need to sign out and back in? ' +
-              'Check your browser console for more info.'
-            )
-            throw e
-          } finally {
-            // re-enable the form, whether the call succeeded or failed
-            fieldset.disabled = false
-          }
-
-          // update local `greeting` variable to match persisted value
-          setGreeting(newGreeting)
-
-          // show Notification
-          setShowNotification(true)
-
-          // remove Notification again after css animation completes
-          // this allows it to be shown again next time the form is submitted
-          setTimeout(() => {
-            setShowNotification(false)
-          }, 11000)
-        }}>
-          <fieldset id="fieldset">
-            <label
-              htmlFor="greeting"
-              style={{
-                display: 'block',
-                color: 'var(--gray)',
-                marginBottom: '0.5em'
-              }}
-            >
-              Change greeting
-            </label>
-            <div style={{ display: 'flex' }}>
-              <input
-                autoComplete="off"
-                defaultValue={greeting}
-                id="greeting"
-                onChange={e => setButtonDisabled(e.target.value === greeting)}
-                style={{ flex: 1 }}
-              />
-              <button
-                disabled={buttonDisabled}
-                style={{ borderRadius: '0 5px 5px 0' }}
-              >
-                Save
-              </button>
-            </div>
-          </fieldset>
-        </form>
-        <p>
-          Look at that! A Hello World app! This greeting is stored on the NEAR blockchain. Check it out:
-        </p>
-        <ol>
-          <li>
-            Look in <code>src/App.js</code> and <code>src/utils.js</code> – you'll see <code>getGreeting</code> and <code>setGreeting</code> being called on <code>contract</code>. What's this?
-          </li>
-          <li>
-            Ultimately, this <code>contract</code> code is defined in <code>assembly/main.ts</code> – this is the source code for your <a target="_blank" rel="noreferrer" href="https://docs.near.org/docs/roles/developer/contracts/intro">smart contract</a>.</li>
-          <li>
-            When you run <code>yarn dev</code>, the code in <code>assembly/main.ts</code> gets deployed to the NEAR testnet. You can see how this happens by looking in <code>package.json</code> at the <code>scripts</code> section to find the <code>dev</code> command.</li>
-        </ol>
-        <hr />
-        <p>
-          To keep learning, check out <a target="_blank" rel="noreferrer" href="https://docs.near.org">the NEAR docs</a> or look through some <a target="_blank" rel="noreferrer" href="https://examples.near.org">example apps</a>.
-        </p>
-      </main>
-      {showNotification && <Notification />}
-    </>
-  )
-}
-
-// this component gets rendered by App after the form is submitted
-function Notification() {
-  const urlPrefix = `https://explorer.${networkId}.near.org/accounts`
-  return (
-    <aside>
-      <a target="_blank" rel="noreferrer" href={`${urlPrefix}/${window.accountId}`}>
-        {window.accountId}
-      </a>
-      {' '/* React trims whitespace around tags; insert literal space character when needed */}
-      called method: 'setGreeting' in contract:
-      {' '}
-      <a target="_blank" rel="noreferrer" href={`${urlPrefix}/${window.contract.contractId}`}>
-        {window.contract.contractId}
-      </a>
-      <footer>
-        <div>✔ Succeeded</div>
-        <div>Just now</div>
-      </footer>
-    </aside>
-  )
+  // if not done loading all the data, show a progress bar, otherwise show the content
+  if(!done) {
+    return <LinearProgress />
+  } else {
+    if(!initialized) {
+      return (
+        <Initialize
+          accountId={accountId}
+          done={done} 
+          handleInitChange={handleInitChange} 
+          initialized={initialized}
+        />
+      )
+    } else {
+      return (
+        <TokenData
+          handleOwnerChange={handleOwnerChange}
+          handleSupplyChange={handleSupplyChange}
+          handleTransferEventChange={handleTransferEventChange}
+          handleTabValueState={handleTabValueState}
+          accountId={accountId}
+          tokenName={tokenName} 
+          tokenSymbol={tokenSymbol}
+          currentSupply={totalSupply}
+          initialSupply={initialSupply}
+          tokenOwner={tokenOwner}
+          done={done}
+          transferEvents={transferEvents}
+          mintEvents={mintEvents}
+          burnEvents={burnEvents}
+          ownerTransferEvents={ownerTransferEvents}
+          accountBalance={accountBalance}
+          tabValue={tabValue}
+          />
+      )
+    }
+  }
 }

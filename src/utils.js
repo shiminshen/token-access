@@ -7,6 +7,7 @@ const nearConfig = getConfig(process.env.NODE_ENV || 'development')
 export async function initContract() {
   // Initialize connection to the NEAR testnet
   const near = await connect(Object.assign({ deps: { keyStore: new keyStores.BrowserLocalStorageKeyStore() } }, nearConfig))
+  window.near = near
 
   // Initializing Wallet based Account. It can work with NEAR testnet wallet that
   // is hosted at https://wallet.testnet.near.org
@@ -18,16 +19,42 @@ export async function initContract() {
   // Initializing our contract APIs by contract name and configuration
   window.contract = await new Contract(window.walletConnection.account(), nearConfig.contractName, {
     // View methods are read only. They don't modify the state, but usually return some value.
-    viewMethods: ['getGreeting'],
+    viewMethods: [
+      'isOwner',
+      'get_total_supply',
+      'get_balance',
+      'get_allowance',
+      'getTokenName',
+      'getTokenSymbol',
+      'getPrecision',
+      'getInitialSupply',
+      'getOwner',
+      'getInit',
+      'getAllTransferEvents',
+      'getAllMintEvents',
+      'getAllBurnEvents',
+      'getAllOwnerTransferEvents'
+    ],
     // Change methods can modify the state. But you don't receive the returned value when called.
-    changeMethods: ['setGreeting'],
+    changeMethods: [
+      'init',
+      'inc_allowance',
+      'dec_allowance',
+      'transfer_from',
+      'transfer',
+      'burn',
+      'mint',
+      'transferOwnership'
+    ],
   })
 }
 
 export function logout() {
   window.walletConnection.signOut()
   // reload page
-  window.location.replace(window.location.origin + window.location.pathname)
+ // window.location.replace(window.location.origin + window.location.pathname)
+ window.location.replace(window.location.origin)
+ 
 }
 
 export function login() {
@@ -36,4 +63,8 @@ export function login() {
   // This works by creating a new access key for the user's account and storing
   // the private key in localStorage.
   window.walletConnection.requestSignIn(nearConfig.contractName)
+}
+
+export function info() {
+  
 }
