@@ -55,8 +55,8 @@ export default function Mint(props) {
     console.log('values', values)
  
     let finished = await window.contract.mint({
-                        tokens: amount
-                    }, process.env.DEFAULT_GAS_VALUE)
+      tokens: amount
+    }, process.env.DEFAULT_GAS_VALUE)
     let changed = await handleSupplyChange()
     if(finished && changed) {
       setFinished(true)

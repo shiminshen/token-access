@@ -106,6 +106,7 @@ export default function App() {
           } catch (err) {
             console.log('no balance')
             setAccountBalance(0)
+            return false
           }
           // retrieve Token Symbol and set state
           try {
@@ -131,7 +132,7 @@ export default function App() {
             setInitialSupply(startSupply)
           } catch (err) {
             console.log('initial supply not set yet')
-            return false
+            // return false
           }
 
           // retrieve current Total Supply and set state
