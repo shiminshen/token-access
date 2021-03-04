@@ -286,8 +286,8 @@ export function inc_allowance(escrow_account_id: AccountId, amount: Amount): boo
     let currentSupply = supply.getSome('totalSupply')
     supply.set('totalSupply', u128.sub(currentSupply, tokens))
     balanceRegistry.set(Context.predecessor, u128.sub(balance , tokens))
-    // recordTransferEvent(Context.predecessor, Context.predecessor, '0x0', tokens)
-    // recordBurnEvent(Context.predecessor, tokens)
+    recordTransferEvent(Context.predecessor, Context.predecessor, '0x0', tokens)
+    recordBurnEvent(Context.predecessor, tokens)
     return true;
   }
   
@@ -302,8 +302,8 @@ export function inc_allowance(escrow_account_id: AccountId, amount: Amount): boo
     supply.set('totalSupply', u128.add(currentSupply, tokens))
     let currentBalance = get_balance(Context.predecessor)
     balanceRegistry.set(Context.predecessor, u128.add(currentBalance, tokens))
-    // recordTransferEvent(Context.predecessor, '0x0', Context.predecessor, tokens)
-    // recordMintEvent(Context.predecessor, tokens)
+    recordTransferEvent(Context.predecessor, '0x0', Context.predecessor, tokens)
+    recordMintEvent(Context.predecessor, tokens)
     return true;
   }
  
