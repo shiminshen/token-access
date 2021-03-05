@@ -51,8 +51,8 @@ export default function Burn(props) {
     
     let finished = await window.contract.burn({
       tokens: amount
-    }, process.env.DEFAULT_GAS_VALUE || 100)
-                    
+    }, process.env.DEFAULT_GAS_VALUE)
+
     let changed = await handleSupplyChange()
 
     if(finished && changed) {
